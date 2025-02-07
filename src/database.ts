@@ -2,6 +2,8 @@
 //     void updatePages();
 // }
 
+import { WIKI_URL } from './consts';
+
 export class CATWikiPageSearchResults {
     private _pageUrls: string[] = [];
     private _foundCount: number = 0;
@@ -29,8 +31,6 @@ export class CATWikiPageSearchResults {
 }
 
 export class PagesDB {
-    static readonly WIKI_URL: string = 'https://wiki.rossmanngroup.com/wiki';
-
     pagesList: string[] = []; // keep another local copy.
 
     public setPages(pages: string[]) {
@@ -62,7 +62,7 @@ export class PagesDB {
     }
 
     public urlForPage(pageTitle: string): string {
-        return `${PagesDB.WIKI_URL}/${encodeURIComponent(pageTitle)}`;
+        return `${WIKI_URL}/${encodeURIComponent(pageTitle)}`;
     }
 
     public urlsForPages(pageTitles: readonly string[]): string[] {

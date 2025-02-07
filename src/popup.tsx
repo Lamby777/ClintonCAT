@@ -4,33 +4,28 @@ import './popup.css';
 
 import { ROOT_URL } from './consts';
 
-function openWikiToReport(title: string) {
+function openWikiToReport(title: string, previousLink: string) {
     // TODO this function should use stuff typed inside the popup dialog,
     // but for now, it's just using consts for testing
 
     const titleEncoded = encodeURIComponent(title.trim());
-
     const url = `${ROOT_URL}/index.php?title=${titleEncoded}&action=edit`;
 
-    function prepopulateEditPage() {
-        // the link of the page in which you clicked the report button from
-        const previousLink = "https://google.com";
-
-        const textbox = document.querySelector("#wpTextbox1");
-        if (textbox instanceof HTMLTextAreaElement) {
-            textbox.value = `Type your report here. \n\nThe link you came from, should you wish to include it in the new article, is: "${previousLink}"`;
-        }
-    }
-
     chrome.tabs.create({ url }, (tab) => {
-        chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-            if (tabId === tab.id && changeInfo.status === "complete") {
-                chrome.tabs.onUpdated.removeListener(listener);
-                chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    func: prepopulateEditPage,
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id! },
+            func: function() {
+                document.addEventListener("DOMContentLoaded", () => {
+                    console.log("Executing script to prepopulate wiki edit page.");
+                    const textbox = document.getElementById("wpTextbox1");
+
+                    if (textbox instanceof HTMLTextAreaElement) {
+                        textbox.innerText = `Type your report here. \n\nThe link you came from, should you wish to include it in the new article, is: "${previousLink}"`;
+                    } else {
+                        console.error("Couldn't find the textbox to prepopulate.");
+                    }
                 });
-            }
+            },
         });
     });
 }
@@ -47,10 +42,14 @@ const Popup: React.FC = () => {
     };
 
     const reportWithParams = () => {
+        // title the user entered
         const title = (document.getElementById("report-title") as HTMLInputElement)?.value;
 
+        // the link of the page in which you clicked the report button from
+        const previousLink = window.location.href;
+
         if (title) {
-            openWikiToReport(title);
+            openWikiToReport(title, previousLink);
         } else {
             document.getElementById("report-title-empty-warning")!.style.display = "block";
         }

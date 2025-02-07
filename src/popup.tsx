@@ -11,6 +11,10 @@ const Popup: React.FC = () => {
         // TODO:
     };
 
+    const reportToCAT = () => {
+        window.open("https://wiki.rossmanngroup.com/index.php?title=Insert_Title_Here&action=edit", "_blank");
+    };
+
     const allowThisSite = () => {
         // TODO:
     };
@@ -39,6 +43,11 @@ const Popup: React.FC = () => {
                     openCATPage();
                 }}>
                 Open CAT page
+            </button>
+            <button
+                className="popup-button"
+                onClick={reportToCAT}>
+                Report to CAT
             </button>
             <button
                 className="popup-button"

@@ -8,7 +8,7 @@ function openWikiToReport(title: string) {
     // TODO this function should use stuff typed inside the popup dialog,
     // but for now, it's just using consts for testing
 
-    const titleEncoded = encodeURIComponent(title);
+    const titleEncoded = encodeURIComponent(title.trim());
 
     const url = `${ROOT_URL}/index.php?title=${titleEncoded}&action=edit`;
 
@@ -47,7 +47,13 @@ const Popup: React.FC = () => {
     };
 
     const reportWithParams = () => {
-        // TODO:
+        const title = (document.getElementById("report-title") as HTMLInputElement)?.value;
+
+        if (title) {
+            openWikiToReport(title);
+        } else {
+            document.getElementById("report-title-empty-warning")!.style.display = "block";
+        }
     };
 
     const allowThisSite = () => {
@@ -104,19 +110,20 @@ const Popup: React.FC = () => {
 
             {/* Report menu, asks for more info before opening the creation page */}
             {view === "report" && (
-                // TODO Search for the title on the CAT wiki to help avoid duplicates
-                // (still the user's responsibility, but can at least make it easier)
-                // - Tell newbies they should probably read the links shown at
-                // https://wiki.rossmanngroup.com/wiki/Consumer_Action_Taskforce:New_here
-                // openWikiToReport("Insert & Title % Here_!!!!");
-
                 <div id="report-menu">
                     <h3>Report to CAT</h3>
-                    <input type="text" placeholder="Article Title" />
+                    <input id="report-title" type="text" placeholder="Article Title" />
+                    <p id="report-title-empty-warning"
+                        style={{ display: "none" }}>Cannot be empty.</p>
+
+                    <p>This creates a mostly empty article, for people who write a lot and know what they're doing. If you're new to writing articles, you should probably use <a href="https://wiki.rossmanngroup.com/wiki/Consumer_Action_Taskforce:New_here">this</a> instead.</p>
+
+                    {/* TODO: add a little search widget to help them do this */}
+                    <p>Please make sure the article doesn't already exist before creating it.</p>
 
                     <button
                         className="popup-button"
-                        onClick={() => { setView("main"); }}>
+                        onClick={reportWithParams}>
                         Start
                     </button>
                     <button

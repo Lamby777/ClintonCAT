@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './popup.css';
 
-import { ROOT_URL } from './consts';
+import { ROOT_URL, WIKI_URL } from './consts';
 
 function openWikiToReport(title: string, previousLink: string) {
     // TODO this function should use stuff typed inside the popup dialog,
@@ -115,7 +115,7 @@ const Popup: React.FC = () => {
                     <p id="report-title-empty-warning"
                         style={{ display: "none" }}>Cannot be empty.</p>
 
-                    <p>This creates a mostly empty article, for people who write a lot and know what they're doing. If you're new to writing articles, you should probably use <a href="https://wiki.rossmanngroup.com/wiki/Consumer_Action_Taskforce:New_here">this</a> instead.</p>
+                    <p>This creates a mostly empty article, for people who write a lot and know what they're doing. If you're new to writing articles, you should probably use <a href={`${WIKI_URL}/Consumer_Action_Taskforce:New_here`}>this</a> instead.</p>
 
                     {/* TODO: add a little search widget to help them do this */}
                     <p>Please make sure the article doesn't already exist before creating it.</p>

@@ -12,7 +12,7 @@ async function openWikiToReport(title: string, previousLink: string) {
 
     await chrome.scripting.executeScript({
         target: { tabId: tab.id! },
-        func: function() {
+        func: function(previousLink) {
             document.addEventListener("DOMContentLoaded", () => {
                 const textbox = document.getElementById("wpTextbox1");
 
@@ -23,6 +23,7 @@ async function openWikiToReport(title: string, previousLink: string) {
                 }
             });
         },
+        args: [previousLink],
     });
 }
 

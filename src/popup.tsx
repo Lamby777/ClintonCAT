@@ -4,29 +4,25 @@ import './popup.css';
 
 import { ROOT_URL, WIKI_URL } from './consts';
 
-function openWikiToReport(title: string, previousLink: string) {
-    // TODO this function should use stuff typed inside the popup dialog,
-    // but for now, it's just using consts for testing
-
+async function openWikiToReport(title: string, previousLink: string) {
     const titleEncoded = encodeURIComponent(title.trim());
     const url = `${ROOT_URL}/index.php?title=${titleEncoded}&action=edit`;
 
-    chrome.tabs.create({ url }, (tab) => {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id! },
-            func: function() {
-                document.addEventListener("DOMContentLoaded", () => {
-                    console.log("Executing script to prepopulate wiki edit page.");
-                    const textbox = document.getElementById("wpTextbox1");
+    const tab = await chrome.tabs.create({ url });
 
-                    if (textbox instanceof HTMLTextAreaElement) {
-                        textbox.innerText = `Type your report here. \n\nThe link you came from, should you wish to include it in the new article, is: "${previousLink}"`;
-                    } else {
-                        console.error("Couldn't find the textbox to prepopulate.");
-                    }
-                });
-            },
-        });
+    await chrome.scripting.executeScript({
+        target: { tabId: tab.id! },
+        func: function() {
+            document.addEventListener("DOMContentLoaded", () => {
+                const textbox = document.getElementById("wpTextbox1");
+
+                if (textbox instanceof HTMLTextAreaElement) {
+                    textbox.innerText = `Type your report here. \n\nThe link you came from, should you wish to include it in the new article, is: "${previousLink}"`;
+                } else {
+                    console.error("Couldn't find the textbox to prepopulate.");
+                }
+            });
+        },
     });
 }
 

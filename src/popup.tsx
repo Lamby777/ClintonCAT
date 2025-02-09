@@ -8,12 +8,12 @@ async function openWikiToReport(title: string, previousLink: string) {
     const titleEncoded = encodeURIComponent(title.trim());
     const url = `${ROOT_URL}/index.php?title=${titleEncoded}&action=edit`;
 
-    const tab = await chrome.tabs.create({ url });
+    const tab = await chrome.tabs.create({ url, active: false });
 
     await chrome.scripting.executeScript({
         target: { tabId: tab.id! },
         func: function(previousLink) {
-            document.addEventListener("DOMContentLoaded", () => {
+            function prepopulate() {
                 const textbox = document.getElementById("wpTextbox1");
 
                 if (textbox instanceof HTMLTextAreaElement) {
@@ -21,7 +21,11 @@ async function openWikiToReport(title: string, previousLink: string) {
                 } else {
                     console.error("Couldn't find the textbox to prepopulate.");
                 }
-            });
+            }
+
+            // if the document is already loaded, don't add the event listener
+            if (document.readyState === "complete") prepopulate();
+            else document.addEventListener("DOMContentLoaded", prepopulate);
         },
         args: [previousLink],
     });

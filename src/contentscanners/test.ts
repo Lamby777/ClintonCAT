@@ -1,5 +1,5 @@
 import { IContentScannerPlugin, IScanParameters, IElementData } from '../contentscanner';
-import { CATWikiPageSearchResults } from '../database';
+import { CATWikiPageSearchResults, PageEntry } from '../database';
 
 // Simple test for simple test page, e.g.
 // https://waynekeenan.github.io/ClintonCAT/tests/www/3products_1cat.html
@@ -20,16 +20,16 @@ export class TestScanner implements IContentScannerPlugin {
         const divElements: IElementData[] = await _params.dom.querySelectorAll('div');
         console.dir(divElements);
 
-        let pageResults = new CATWikiPageSearchResults();
+        const pageResults = new CATWikiPageSearchResults();
 
         const alertImgUrl = chrome.runtime.getURL('alert.png');
 
-        for (let i = 0; i < divElements.length; i++) {
-            const divId = divElements[i].id;
+        for (const divElement of divElements) {
+            const divId = divElement.id;
             console.log('element', divId);
 
             const productTitleSelector = `#${divId} h2`;
-            const imgSelector = `#${divId} h2`;
+            // const imgSelector = `#${divId} h2`;
             console.log('productTitleSelector:', productTitleSelector);
             const h2: IElementData | undefined | null = await _params.dom.querySelector(productTitleSelector);
             // const h2: IElementData | undefined | null = await _params.dom.querySelectorByParentId(divId, 'h2');
@@ -40,16 +40,20 @@ export class TestScanner implements IContentScannerPlugin {
             console.log('h2 text: ', h2Text);
 
             if (h2Text) {
-                const pagesFound = await _params.pagesDb.fuzzySearch(h2Text);
-                console.log('pagesFound', pagesFound);
-                pageResults.addResults(pagesFound);
+                const searchResult = _params.pagesDb.fuzzySearch(h2Text);
+                console.log('searchResult', searchResult);
+                pageResults.addPageEntries(searchResult.pageEntries);
 
-                if (pagesFound.totalPagesFound) {
+                if (searchResult.totalPagesFound) {
                     console.log('Adding the CAT html: ', alertImgUrl);
+                    const pageEntry = pageResults.pageEntries[0] as PageEntry;
+                    console.dir(pageEntry);
+                    const pageUrl: string = pageEntry.url();
+                    const popupText: string = pageEntry.popupText;
                     await _params.dom.createElement(
                         divId,
                         'p',
-                        `<a href="${pagesFound.pageUrls[0]}"><img id="alertIcon"  src="${alertImgUrl}" alt=""/></a>`
+                        `<a href="${pageUrl}"  target="_blank"><img id="alertIcon"  src="${alertImgUrl}" alt="" title="${popupText}"/></a>`
                         // `<a href="${pagesFound.pageUrls[0]}" target="_blank" \n` +
                         //     `   style="position: fixed; top: 10px; right: 10px; z-index: 1000;">\n` +
                         //     `  <img src="${alertImgUrl}" alt="Clinton is not pleased" \n` +

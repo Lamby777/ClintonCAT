@@ -1,8 +1,9 @@
-import { Preferences } from './storage';
+import Preferences from './Preferences';
 import { CATWikiPageSearchResults, PagesDB } from './database';
 import { StorageCache } from './storagecache';
 import { DomainTools } from './domaintools';
 import { ContentScanner } from './contentscanner';
+import ChromeSyncStorage from './storage/ChromeSyncStorage';
 
 export interface IMainMessage {
     badgeText: string;
@@ -17,6 +18,8 @@ export class Main {
     contentScanner: ContentScanner;
 
     constructor() {
+        // TODO: need a ChromeLocalStorage for pages db
+        Preferences.setBackingStores(new ChromeSyncStorage(), new ChromeSyncStorage());
         this.pagesDatabase = new PagesDB();
         this.storageCache = new StorageCache(this.pagesDatabase);
         this.domainTools = new DomainTools();
@@ -25,51 +28,81 @@ export class Main {
 
     indicateStatus() {
         void chrome.action.setBadgeText({
-            text: Preferences.isEnabled ? 'on' : 'off',
+            text: Preferences.isEnabled.value ? 'on' : 'off',
         });
     }
 
-    // eslint-disable-next-line @typescript-eslint/require-await
-    async indicateCATPages(pages: CATWikiPageSearchResults): Promise<void> {
+    /**
+     * Display how many pages were found by updating the badge text
+     */
+    indicateCATPages(pages: CATWikiPageSearchResults): void {
+        // Update badge text with total pages found
         void chrome.action.setBadgeText({ text: pages.totalPagesFound.toString() });
         console.log(pages);
-        // TODO: in page popup
+
+        // Example: show a notification about the found pages
+        // NOTE: Requires "notifications" permission in your manifest.json
+        chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'icon48.png', // TODO: Use a proper icon
+            title: 'CAT Pages Found',
+            message: `Found ${pages.totalPagesFound.toString()} page(s).`,
+        });
     }
 
+    /**
+     * Called when the extension wants to change the action badge text manually.
+     */
     onBadgeTextUpdate(text: string): void {
         void chrome.action.setBadgeText({ text: text });
     }
 
     checkDomainIsExcluded(domain: string): boolean {
-        return this.domainTools.isDomainExcluded(Preferences.domainExclusions, domain);
+        return this.domainTools.isDomainExcluded(Preferences.domainExclusions.value, domain);
     }
 
+    /**
+     * Called when a page (tab) has finished loading.
+     * Scans the domain and in-page contents, merges results,
+     * and indicates how many CAT pages were found.
+     */
     async onPageLoaded(domain: string, url: string): Promise<void> {
         const mainDomain = this.domainTools.extractMainDomain(domain);
-        console.log('Main domain: ' + mainDomain);
+        console.log('Main domain:', mainDomain);
 
         if (this.checkDomainIsExcluded(mainDomain)) {
-            console.log('Excluded domain: ' + mainDomain);
+            console.log('Excluded domain:', mainDomain);
             return;
         }
 
-        // TODO: remove specialised step for domain as it can be handled by plugins (e.g. th    e default)
-        const domainResults = await this.pagesDatabase.getPagesForDomain(mainDomain);
-        const inPageResults = await this.contentScanner.checkPageContents(domain, mainDomain, url, this.pagesDatabase);
-        // combine the results
-        domainResults.addResults(inPageResults);
+        // Fetch existing domain results (if any) from the PagesDB
+        const domainResults = this.pagesDatabase.getPagesForDomain(mainDomain);
 
-        void this.indicateCATPages(domainResults);
+        // Scan the current page’s content for new page entries
+        const inPageResults = await this.contentScanner.checkPageContents(domain, mainDomain, url, this.pagesDatabase);
+
+        // Merge any newly found page entries
+        domainResults.addPageEntries(inPageResults.pageEntries);
+
+        this.indicateCATPages(domainResults);
     }
 
+    /**
+     * Called when the extension is installed.
+     * Initializes default settings and indicates current status.
+     */
     onBrowserExtensionInstalled(): void {
         console.log('ClintonCAT Extension Installed');
-        void Preferences.initDefaults().then(() => {
+        Preferences.initDefaults().then(() => {
             Preferences.dump();
             this.indicateStatus();
         });
     }
 
+    /**
+     * Called when we receive a message from elsewhere in the extension
+     * (e.g., content script or popup).
+     */
     onBrowserExtensionMessage(
         message: IMainMessage,
         _sender: chrome.runtime.MessageSender,
@@ -81,7 +114,7 @@ export class Main {
 
             if (message.badgeText) {
                 this.onBadgeTextUpdate(message.badgeText);
-            } else if (!Preferences.isEnabled) {
+            } else if (!Preferences.isEnabled.value) {
                 this.indicateStatus();
             } else if (message.domain) {
                 await this.onPageLoaded(message.domain, message.url);

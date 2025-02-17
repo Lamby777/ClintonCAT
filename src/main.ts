@@ -1,9 +1,10 @@
-import Preferences from './Preferences';
+import Preferences from './preferences';
 import { CATWikiPageSearchResults, PagesDB } from './database';
 import { StorageCache } from './storagecache';
 import { DomainTools } from './domaintools';
-import { ContentScanner } from './contentscanner';
-import ChromeSyncStorage from './storage/ChromeSyncStorage';
+import { ContentScanner, IScanParameters } from './contentscanner';
+import ChromeSyncStorage from './storage/chrome-sync-storage';
+import { DOMHelper } from '@/domhelper';
 
 export interface IMainMessage {
     badgeText: string;
@@ -21,6 +22,7 @@ export class Main {
         // TODO: need a ChromeLocalStorage for pages db
         Preferences.setBackingStores(new ChromeSyncStorage(), new ChromeSyncStorage());
         this.pagesDatabase = new PagesDB();
+        this.pagesDatabase.initDefaultPages();
         this.storageCache = new StorageCache(this.pagesDatabase);
         this.domainTools = new DomainTools();
         this.contentScanner = new ContentScanner();
@@ -75,16 +77,16 @@ export class Main {
             return;
         }
 
-        // Fetch existing domain results (if any) from the PagesDB
-        const domainResults = this.pagesDatabase.getPagesForDomain(mainDomain);
+        const scannerParameters: IScanParameters = {
+            domain: domain.toLowerCase(),
+            mainDomain: mainDomain.toLowerCase(),
+            url: url,
+            pagesDb: this.pagesDatabase,
+            dom: new DOMHelper(),
+            notify: (results) => this.indicateCATPages(results),
+        };
 
-        // Scan the current page’s content for new page entries
-        const inPageResults = await this.contentScanner.checkPageContents(domain, mainDomain, url, this.pagesDatabase);
-
-        // Merge any newly found page entries
-        domainResults.addPageEntries(inPageResults.pageEntries);
-
-        this.indicateCATPages(domainResults);
+        await this.contentScanner.checkPageContents(scannerParameters);
     }
 
     /**

@@ -1,23 +1,33 @@
-// export interface IPagesDB {
-//     void updatePages();
-// }
+import escapeRegex from '@/utils/helpers/escape-regex';
+import pagesDbDefaultJson from '../data/pages_db.json'; // assert { type: 'json' };
+import { WIKI_URL } from './consts';
+
 export interface IPageEntry {
+    pageId: number;
     pageTitle: string;
     popupText: string;
     category: string;
 }
 
 export class PageEntry implements IPageEntry {
-    static readonly WIKI_URL: string = 'https://wiki.rossmanngroup.com/wiki';
-
+    private _pageId: number;
     private _pageTitle: string;
     private _popupText: string;
     private _category: string;
 
     constructor(pageEntry: IPageEntry) {
+        this._pageId = pageEntry.pageId;
         this._pageTitle = pageEntry.pageTitle;
         this._popupText = pageEntry.popupText;
         this._category = pageEntry.category;
+    }
+
+    get pageId(): number {
+        return this._pageId;
+    }
+
+    set pageId(value: number) {
+        this._pageId = value;
     }
 
     get pageTitle(): string {
@@ -45,11 +55,9 @@ export class PageEntry implements IPageEntry {
     }
 
     public url(): string {
-        return `${PageEntry.WIKI_URL}/${encodeURIComponent(this.pageTitle)}`;
+        return `${WIKI_URL}/${this.pageId.toString()}`;
     }
 }
-
-import { WIKI_URL } from './consts';
 
 export class CATWikiPageSearchResults {
     private _pageEntries: IPageEntry[] = [];
@@ -78,7 +86,20 @@ export class CATWikiPageSearchResults {
 }
 
 export class PagesDB {
+    static readonly PAGES_DB_JSON_URL: string =
+        'https://raw.githubusercontent.com/WayneKeenan/ClintonCAT/refs/heads/main/data/pages_db.json';
     private pagesList: IPageEntry[] = []; // keep another local copy.
+
+    static readonly pagesDbDefault: IPageEntry[] = pagesDbDefaultJson;
+
+    // load the baked in pagesdb json as an initial db, just in case...
+    public initDefaultPages(): void {
+        this.setPages(PagesDB.pagesDbDefault);
+    }
+
+    public getDefaultPages(): readonly IPageEntry[] {
+        return PagesDB.pagesDbDefault;
+    }
 
     public setPages(pages: IPageEntry[]) {
         // console.log('setPages', pages);
@@ -99,19 +120,64 @@ export class PagesDB {
         return results;
     }
 
-    // TODO: fix producing some false positives in results
-    public fuzzySearch(query: string, matchAllWords: boolean = false): CATWikiPageSearchResults {
-        const lowerQuery = query.toLowerCase().split(/\s+/);
+    public findConsecutiveWords(query: string, maxResults = 1, onlyFromStart = true): CATWikiPageSearchResults {
+        if (maxResults != 1) {
+            throw new Error('Unimplemented: maxResults != 1');
+        }
+        if (!onlyFromStart) {
+            throw new Error('Unimplemented: onlyFromStart = false');
+        }
+
+        const searchWords = query.toLowerCase().split(' ');
+        let maxInOrderCount = 0;
+        let foundPage = null;
+
+        for (const pageEntry of this.pagesList) {
+            const titleWords = pageEntry.pageTitle.toLowerCase().split(' ');
+            let thisInOrderCount = 0;
+            const maxIndex = Math.min(searchWords.length, titleWords.length);
+
+            for (let index = 0; index < maxIndex; index++) {
+                if (searchWords[index] === titleWords[index]) {
+                    thisInOrderCount++;
+                }
+            }
+            if (thisInOrderCount > maxInOrderCount) {
+                maxInOrderCount = thisInOrderCount;
+                foundPage = pageEntry;
+            }
+        }
         const results = new CATWikiPageSearchResults();
 
-        const pageEntries = this.pagesList.filter((pageEntry: IPageEntry) => {
-            const lowerPageTitle = pageEntry.pageTitle.toLowerCase();
-            return matchAllWords
-                ? lowerQuery.every((word) => lowerPageTitle.includes(word))
-                : lowerQuery.some((word) => lowerPageTitle.includes(word));
-        });
-        results.addPageEntries(pageEntries);
+        if (foundPage != null) {
+            results.addPageEntry(foundPage);
+        }
+        return results;
+    }
 
+    public fuzzySearch(query: string, matchAllWords: boolean = false): CATWikiPageSearchResults {
+        const lowerQueryWords = query.toLowerCase().split(/\s+/);
+        const results = new CATWikiPageSearchResults();
+
+        const pageEntries = this.pagesList
+            .map((pageEntry) => {
+                const lowerTitle = pageEntry.pageTitle.toLowerCase();
+                let matchCount = 0;
+                for (const word of lowerQueryWords) {
+                    // Use word boundaries to reduce false positives
+                    // and escape special regex characters to handle queries like "(test)".
+                    const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i');
+                    if (regex.test(lowerTitle)) {
+                        matchCount++;
+                    }
+                }
+                return { pageEntry, matchCount };
+            })
+            .filter(({ matchCount }) => (matchAllWords ? matchCount === lowerQueryWords.length : matchCount > 0))
+            .sort((a, b) => b.matchCount - a.matchCount)
+            .map(({ pageEntry }) => pageEntry);
+
+        results.addPageEntries(pageEntries);
         return results;
     }
 }

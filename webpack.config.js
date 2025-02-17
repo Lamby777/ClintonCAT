@@ -3,9 +3,9 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const TouchManifestPlugin = require('./webpack-plugins/TouchManifestPlugin');
-const PostBuildManifestPlugin = require('./webpack-plugins/PostBuildManifestPlugin');
-const ReloadExtensionPlugin = require('./webpack-plugins/ReloadExtensionPlugin');
+const PostBuildManifestPlugin = require('./webpack-plugins/post-build-manifest-plugin');
+const ReloadExtensionPlugin = require('./webpack-plugins/reload-extension-plugin');
+const TouchManifestPlugin = require('./webpack-plugins/touch-manifest-plugin');
 
 module.exports = (env, argv) => {
     const isDevelopment = argv.mode === 'development';
@@ -24,8 +24,12 @@ module.exports = (env, argv) => {
         output: {
             path: path.resolve(__dirname, 'dist'),
             filename: '[name].js',
+            clean: true,
         },
         resolve: {
+            alias: {
+                '@': path.resolve(__dirname, 'src'),
+            },
             extensions: ['.tsx', '.ts', '.js'],
         },
         module: {
@@ -36,7 +40,25 @@ module.exports = (env, argv) => {
                     exclude: /node_modules/,
                 },
                 {
+                    test: /\.module\.css$/,
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        {
+                            loader: 'css-loader',
+                            options: {
+                                esModule: true,
+                                modules: {
+                                    namedExport: true,
+                                    localIdentName: '[name]__[local]__[hash:base64:5]',
+                                },
+                            },
+                        },
+                    ],
+                },
+
+                {
                     test: /\.css$/,
+                    exclude: /\.module\.css$/,
                     use: [MiniCssExtractPlugin.loader, 'css-loader'],
                 },
             ],
@@ -64,9 +86,9 @@ module.exports = (env, argv) => {
                 ],
             }),
             new MiniCssExtractPlugin(),
-            new TouchManifestPlugin(),
             new PostBuildManifestPlugin(),
             new ReloadExtensionPlugin(),
+            new TouchManifestPlugin(),
         ],
         devtool: isDevelopment ? 'cheap-module-source-map' : 'source-map',
     };

@@ -1,8 +1,6 @@
 import { PagesDB, IPageEntry } from './database';
 
 export class StorageCache {
-    static readonly PAGES_DB_JSON_URL: string =
-        'https://raw.githubusercontent.com/WayneKeenan/ClintonCAT/refs/heads/main/data/pages_db_v2.json';
     static readonly UPDATE_ALARM_NAME: string = 'updatePagesDB';
     static readonly CACHE_KEY: string = 'cachedPagesDB';
     static readonly CACHE_TIMESTAMP_KEY: string = 'cachedPagesDBTimestamp';
@@ -57,7 +55,7 @@ export class StorageCache {
             }
 
             console.log('Fetching updated pages database...');
-            const jsonData: string = await this.fetchJson(StorageCache.PAGES_DB_JSON_URL);
+            const jsonData: string = await this.fetchJson(PagesDB.PAGES_DB_JSON_URL);
             await this.saveCache(jsonData, now);
             console.log(jsonData);
             this.pagesDb.setPages(jsonData as unknown as IPageEntry[]);
@@ -66,15 +64,16 @@ export class StorageCache {
         } catch (error: unknown) {
             if (error instanceof Error) {
                 console.error(`Failed to update pages database: ${error.message}`);
-                throw error;
+                // PagesDB has an initial baked in default, however...
+                // TODO: as simply re-throwing kills the plugin it would be better to update UI
             }
         }
     }
 
     // Function to get the cached pages database
-    async getCachedPagesDB(): Promise<string[]> {
+    async getCachedPagesDB(): Promise<IPageEntry[]> {
         const { [StorageCache.CACHE_KEY]: pagesDb } = await chrome.storage.local.get(StorageCache.CACHE_KEY);
-        return (pagesDb as string[] | undefined) ?? [];
+        return (pagesDb as IPageEntry[] | undefined) ?? [];
     }
 
     async fetchJson(url: string): Promise<string> {

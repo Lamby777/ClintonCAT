@@ -1,17 +1,16 @@
 import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
 import { includeIgnoreFile } from '@eslint/compat';
+import checkFile from 'eslint-plugin-check-file';
+import prettier from 'eslint-plugin-prettier/recommended';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import tseslint from 'typescript-eslint';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const gitignorePath = path.resolve(__dirname, '.gitignore');
 
 export default tseslint.config(
-    eslint.configs.recommended,
-    tseslint.configs.strictTypeChecked,
-    tseslint.configs.stylisticTypeChecked,
     {
         languageOptions: {
             parserOptions: {
@@ -19,8 +18,16 @@ export default tseslint.config(
                 tsconfigRootDir: import.meta.dirname,
             },
         },
-    },
-    {
+        files: ['**/*.{mjs,js,jsx,mts,ts,tsx}'],
+        extends: [
+            eslint.configs.recommended,
+            tseslint.configs.strictTypeChecked,
+            tseslint.configs.stylisticTypeChecked,
+            prettier,
+        ],
+        plugins: {
+            'check-file': checkFile,
+        },
         rules: {
             '@typescript-eslint/no-confusing-void-expression': 'off',
             '@typescript-eslint/no-floating-promises': 'off',
@@ -38,16 +45,28 @@ export default tseslint.config(
             ],
             '@typescript-eslint/no-inferrable-types': 'off',
             '@typescript-eslint/no-extraneous-class': 'off',
+            'check-file/filename-naming-convention': [
+                'error',
+                {
+                    '**/*.{js,jsx,ts,tsx}': 'KEBAB_CASE',
+                },
+                {
+                    ignoreMiddleExtensions: true,
+                },
+            ],
         },
     },
     includeIgnoreFile(gitignorePath),
     {
         ignores: [
+            'node_modules',
+            'dist',
             '**/webpack.config.js',
             '**/eslint.config.mjs',
             '**/jest.config.ts',
             '**/webpack-plugins',
             '**/scripts',
+            '**/engines/safari',
         ],
     }
 );

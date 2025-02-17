@@ -3,21 +3,29 @@ import { createRoot } from 'react-dom/client';
 import * as styles from './popup.module.css';
 import Preferences from './preferences';
 
-import { WIKI_ROOT_URL } from './consts';
+import { PRELOADS_AND_EDITINTROS, WIKI_ROOT_URL } from './consts';
 
-async function openWikiToReport(title: string, previousLink: string) {
+// mayhaps helpful links below for API docs
+// https://www.mediawiki.org/wiki/API:Edit
+// https://www.mediawiki.org/w/api.php?action=help&modules=visualeditor
+async function openWikiToReport(title: string, previousLink: string, category: string) {
     const titleEncoded = encodeURIComponent(title.trim());
+    // TODO check if article exists here
 
-    const url = `${WIKI_ROOT_URL}/index.php?veaction=edit`;
+    const { preload, editintro } = PRELOADS_AND_EDITINTROS[category];
+    const boilerplate = encodeURIComponent('Summary goes here ' + previousLink);
+    const boilerplate2 = encodeURIComponent('Incident goes here');
 
-    // &preload=Project%3ASample%2FProduct #1
-    // &editintro=Project%3ASample%2FProduct%2FHelp #1
-    // &title=Title+name #2
-    // &create=Create+page
-    // &preloadparams%5b%5d=Summary%20goes%20here #3
-    // &preloadparams%5b%5d=Incident%20goes%20here #3
-    //
-    // TODO https://github.com/WayneKeenan/ClintonCAT/issues/45#issuecomment-2646190793
+    // prepare the url
+    const url =
+        `${WIKI_ROOT_URL}/index.php?veaction=edit&create=Create+page` +
+        `&preload=${preload}&editintro=${editintro}&title=${titleEncoded}` +
+        // reuse this parameter for each new section
+        `&preloadparams%5b%5d=${boilerplate}` +
+        `&preloadparams%5b%5d=${boilerplate2}`;
+
+    // open a tab set to that page
+    await chrome.tabs.create({ url });
 }
 
 const Popup = () => {
@@ -44,7 +52,8 @@ const Popup = () => {
         const previousLink = window.location.href;
 
         if (title) {
-            openWikiToReport(title, previousLink);
+            // TODO let them pick a category
+            openWikiToReport(title, previousLink, 'incident');
         } else {
             const warning = document.getElementById('report-title-empty-warning');
             if (warning) warning.style.display = 'block';

@@ -3,35 +3,21 @@ import { createRoot } from 'react-dom/client';
 import * as styles from './popup.module.css';
 import Preferences from './preferences';
 
-import { ROOT_URL } from './consts';
+import { WIKI_ROOT_URL } from './consts';
 
 async function openWikiToReport(title: string, previousLink: string) {
     const titleEncoded = encodeURIComponent(title.trim());
-    const url = `${ROOT_URL}/index.php?title=${titleEncoded}&action=edit`;
 
+    const url = `${WIKI_ROOT_URL}/index.php?veaction=edit`;
+
+    // &preload=Project%3ASample%2FProduct #1
+    // &editintro=Project%3ASample%2FProduct%2FHelp #1
+    // &title=Title+name #2
+    // &create=Create+page
+    // &preloadparams%5b%5d=Summary%20goes%20here #3
+    // &preloadparams%5b%5d=Incident%20goes%20here #3
+    //
     // TODO https://github.com/WayneKeenan/ClintonCAT/issues/45#issuecomment-2646190793
-
-    // const tab = await chrome.tabs.create({ url, active: false });
-    //
-    // await chrome.scripting.executeScript({
-    //     target: { tabId: tab.id },
-    //     func: function(previousLink) {
-    //         function prepopulate() {
-    //             const textbox = document.getElementById('wpTextbox1');
-    //
-    //             if (textbox instanceof HTMLTextAreaElement) {
-    //                 textbox.innerText = `Type your report here. \n\nThe link you came from, should you wish to include it in the new article, is: "${previousLink}"`;
-    //             } else {
-    //                 console.error("Couldn't find the textbox to prepopulate.");
-    //             }
-    //         }
-    //
-    //         // if the document is already loaded, don't add the event listener
-    //         if (document.readyState === 'complete') prepopulate();
-    //         else document.addEventListener('DOMContentLoaded', prepopulate);
-    //     },
-    //     args: [previousLink],
-    // });
 }
 
 const Popup = () => {
@@ -128,7 +114,7 @@ const Popup = () => {
                     <p>
                         This creates a mostly empty article, for people who write a lot and know what they're doing. If
                         you're new to writing articles, you should probably use{' '}
-                        <a href={`${ROOT_URL}/wiki/Consumer_Action_Taskforce:New_here`}>this</a> instead.
+                        <a href={`${WIKI_ROOT_URL}/Consumer_Action_Taskforce:New_here`}>this</a> instead.
                     </p>
 
                     {/* TODO: add a little search widget to help them do this */}

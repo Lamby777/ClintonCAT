@@ -1,4 +1,6 @@
-export const WIKI_ROOT_URL: string = 'https://wiki.rossmanngroup.com/wiki';
+const WIKI_BASE_URL: string = 'https://wiki.rossmanngroup.com';
+export const WIKI_PAGES_ROOT_URL: string = `${WIKI_BASE_URL}/wiki`;
+export const INDEX_PHP_URL: string = `${WIKI_BASE_URL}/index.php`;
 
 /// Preload and edit intro IDs to be interpolated into the URL when starting a new article
 export const PRELOADS_AND_EDITINTROS: Record<string, { preload: string; editintro: string }> = {

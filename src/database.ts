@@ -1,6 +1,6 @@
 import escapeRegex from '@/utils/helpers/escape-regex';
 import pagesDbDefaultJson from '../data/pages_db.json'; // assert { type: 'json' };
-import { WIKI_ROOT_URL } from './consts';
+import { WIKI_PAGES_ROOT_URL } from './consts';
 
 export interface IPageEntry {
     pageId: number;
@@ -10,7 +10,7 @@ export interface IPageEntry {
 }
 
 export class PageEntry implements IPageEntry {
-    static readonly WIKI_URL: string = `${WIKI_ROOT_URL}/index.php?curid=`;
+    static readonly WIKI_URL: string = `${WIKI_PAGES_ROOT_URL}/index.php?curid=`;
 
     private _pageId: number;
     private _pageTitle: string;

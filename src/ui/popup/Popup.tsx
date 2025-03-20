@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as styles from './Popup.module.css';
 
-import { PRELOADS_AND_EDITINTROS, WIKI_ROOT_URL } from '../../consts';
+import { PRELOADS_AND_EDITINTROS, INDEX_PHP_URL, WIKI_PAGES_ROOT_URL } from '../../consts';
 
 // mayhaps helpful links below for API docs
 // https://www.mediawiki.org/wiki/API:Edit
@@ -21,7 +21,7 @@ async function openWikiToReport(title: string, previousLink: string, category: s
 
     // prepare the url
     const url =
-        `${WIKI_ROOT_URL}/index.php?veaction=edit&create=Create+page` +
+        `${INDEX_PHP_URL}?veaction=edit&create=Create+page` +
         `&preload=${preload}&editintro=${editintro}&title=${titleEncoded}` +
         // reuse this parameter for each new section
         `&preloadparams%5b%5d=${boilerplate}` +
@@ -133,7 +133,7 @@ const Popup = () => {
                     <p>
                         This creates a mostly empty article, for people who write a lot and know what they're doing. If
                         you're new to writing articles, you should probably use{' '}
-                        <a href={`${WIKI_ROOT_URL}/Consumer_Action_Taskforce:New_here`}>this</a> instead.
+                        <a href={`${WIKI_PAGES_ROOT_URL}/Consumer_Action_Taskforce:New_here`}>this</a> instead.
                     </p>
 
                     {/* TODO: add a little search widget to help them do this */}

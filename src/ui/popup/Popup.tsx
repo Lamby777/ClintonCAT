@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as styles from './Popup.module.css';
 
-import { PRELOADS_AND_EDITINTROS, WIKI_ROOT_URL } from './consts';
+import { PRELOADS_AND_EDITINTROS, WIKI_ROOT_URL } from '../../consts';
 
 // mayhaps helpful links below for API docs
 // https://www.mediawiki.org/wiki/API:Edit

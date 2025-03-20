@@ -6,14 +6,46 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as styles from './Popup.module.css';
 
-import { PRELOADS_AND_EDITINTROS, INDEX_PHP_URL, WIKI_PAGES_ROOT_URL } from '../../consts';
+import { PRELOADS_AND_EDITINTROS, INDEX_PHP_URL, WIKI_PAGES_ROOT_URL, API_URL } from '../../consts';
 
 // mayhaps helpful links below for API docs
 // https://www.mediawiki.org/wiki/API:Edit
+// https://www.mediawiki.org/wiki/API:Search
 // https://www.mediawiki.org/w/api.php?action=help&modules=visualeditor
+
+// maybe this "searching" stuff belongs in `util`? idk where it should go but probably not here
+
+type WikiSearchResult = {
+    ns: number;
+    title: string;
+    pageid: number;
+    size: number;
+    wordcount: number;
+    snippet: string;
+    timestamp: string;
+};
+
+async function searchArticleTitles(title: string): Promise<WikiSearchResult[]> {
+    // add &srwhat=text to the params to search the article contents instead of just titles
+    const response = await fetch(`${API_URL}?action=query&list=search&srsearch=${toWikiTitle(title)}&format=json`);
+    const responseJSON = await response.json();
+
+    const search_results = responseJSON?.query?.search;
+
+    if (Array.isArray(search_results))
+        return Promise.reject('Schema issue (`query.search` does not exist or is not an array)');
+
+    return search_results;
+}
+
+/// Turns a user-provided title into a format that MediaWiki won't complain about
+function toWikiTitle(title: string): string {
+    // TODO do this later
+    return encodeURIComponent(title.trim());
+}
+
 async function openWikiToReport(title: string, previousLink: string, category: string) {
-    const titleEncoded = encodeURIComponent(title.trim());
-    // TODO check if article exists here
+    const titleEncoded = toWikiTitle(title);
 
     const { preload, editintro } = PRELOADS_AND_EDITINTROS[category];
     const boilerplate = encodeURIComponent('Summary goes here ' + previousLink);
@@ -130,14 +162,20 @@ const Popup = () => {
                         Cannot be empty.
                     </p>
 
+                    <label htmlFor="category">Category:</label>
+                    <select id="category">
+                        {/* TODO store this in the state and use it for picking preload */}
+                        <option value="company">Company</option>
+                        <option value="incident">Incident</option>
+                        <option value="product">Product</option>
+                        <option value="productLine">Product Line</option>
+                    </select>
+
                     <p>
                         This creates a mostly empty article, for people who write a lot and know what they're doing. If
                         you're new to writing articles, you should probably use{' '}
                         <a href={`${WIKI_PAGES_ROOT_URL}/Consumer_Action_Taskforce:New_here`}>this</a> instead.
                     </p>
-
-                    {/* TODO: add a little search widget to help them do this */}
-                    <p>Please make sure the article doesn't already exist before creating it.</p>
 
                     <button className="popup-button" onClick={reportWithParams}>
                         Start
@@ -149,6 +187,12 @@ const Popup = () => {
                         }}>
                         Back
                     </button>
+
+                    <p>Please make sure a similar article doesn't already exist before creating one.</p>
+
+                    <div className="possible-existing-articles">
+                        <h4>Possible existing articles</h4>
+                    </div>
                 </div>
             )}
             <div className={styles.divider} />
